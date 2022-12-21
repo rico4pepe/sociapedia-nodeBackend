@@ -5,7 +5,7 @@ import {login, refresh, logout} from "../controller/authController.js"
 
 const router = express.Router();
 
-router.route('/')
+router.route('/login')
 .post(login)
 //router.post('/');
 

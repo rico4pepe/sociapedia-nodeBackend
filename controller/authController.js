@@ -15,22 +15,21 @@ export const login = asyncHandler(async(req, res)=>{
     // }
 
      //Check if user does not exist or is not active 
-     const existingUser = await User.findOne({email}).exec()
-     if(!existingUser || !existingUser.active){
-         return res.status(401).json({message: "User is not authorized"})
+     const existingUser = await User.findOne({email}).lean()
+     if(!existingUser){
+         return res.status(401).json({message: "User does not exist"})
      }
 
      //Check if user password is correct
      const isPasswordCorrect = await bcrypt.compare(password, existingUser.password)
      if(!isPasswordCorrect){
-        return res.status(401).json({message: "Unauthorized User"})
+        return res.status(401).json({message: "Invalid credentials"})
     }
 
     const accessToken = jwt.sign(
         {
             "UserInfo": {
                 "email": existingUser.email,
-                 "roles" :existingUser.roles
                 }
         }, process.env.JSON_SECRET_KEY, 
         {expiresIn: '2m'}
@@ -53,7 +52,7 @@ export const login = asyncHandler(async(req, res)=>{
                 maxAge: 7 * 24 * 60 * 1000 // cookie expiry: set to match refresh token 
             })
 
-            // send accessToken with user emain and user roles
+            // send accessToken with user email
             res.json({accessToken})
 })
 

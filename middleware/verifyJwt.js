@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken'
+import asyncHandler from 'express-async-handler'
 
-export const verifyJwt = (req, res, next) =>{
+
+export const verifyJwt = asyncHandler((req, res, next) =>{
     const authHeader = req.headers.authorization || req.headers.Authorization
 
     if(!authHeader?.startsWith('Bearer ')){
@@ -14,8 +16,8 @@ export const verifyJwt = (req, res, next) =>{
         (err, decoded) =>{
             if(err) return res.status(403).json({message: 'Forbidden'})
             req.user = decoded.UserInfo.email
-            req.roles = decoded.UserInfo.roles
             next()
         }
     )
-}
+}) 
+

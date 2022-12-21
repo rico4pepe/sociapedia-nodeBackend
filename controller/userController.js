@@ -7,40 +7,27 @@ import express from "express";
 import bcrypt from 'bcrypt';
 import asyncHandler from 'express-async-handler'
 
-dotenv.config({ debug: true })
-const router = express.Router();
 
 
-
-
-
-
-
-//View All Users
-// export const getAllUsers = asyncHandler(async (req, res) => {
-//         const users = await User.find().lean() 
-//         if(!users?.length){
-//             return res.status(400).json({message: 'No users found'})
-//         }
-
-//         res.json(users)
-// })
 
 // Create New Users - Post method
-export const createNewUser =  asyncHandler(async (req, res) => {
-    
+export const createNewUser =   asyncHandler(async (req, res) => {
+
+
         const {
             firstName,
              lastName,
               email, 
               password, 
-              picturePath, 
-              friends, 
-              location, 
-              occupation, 
-              viewedProfile,  
-              impression 
+               picturePath, 
+               friends, 
+               location, 
+               occupation, 
+               viewedProfile,
+               impression
             } = req.body;
+
+          
         //Check if user already exist 
         const existingUser = await User.findOne({email}).lean().exec()
         if(existingUser){
@@ -53,52 +40,128 @@ export const createNewUser =  asyncHandler(async (req, res) => {
       
     
         //Create and Store new user object
-        const result = await User.create({
+
+        const result =  await  User.create({
             firstName,
             lastName,
              email, 
              password: hashpassword,
-             picturePath, 
-             friends, 
-             location, 
-             occupation, 
-             viewedProfile: Math.floor(Math.Random() * 1000);
-             impression: Math.floor(Math.Random() * 1000);
+              picturePath, 
+              friends, 
+              location, 
+              occupation,
+              viewedProfile: Math.floor(Math.random() * 1000), 
+              impression : Math.floor(Math.random() * 1000),
+      
         }) ;
+      
+        // const savedUser = await newUser.save();
     
         if(result){
     
-            const token = jwt.sign({email: result.email, id : result._id}, process.env.JSON_SECRET_KEY)
+            const token = jwt.sign({email: result.email}, process.env.JSON_SECRET_KEY)
             res.status(201).json({result, token});
         }else{
             res.status(400).json({message: "invalid user data recieved"})
         }
-    
-        
-    
+       
+})
     
    
+export const getUsers   = asyncHandler(async (req, res) => {
 
+            const {id} = req.params
+             //const user = await User.findOne(id).lean() 
+          
+             const user = await User.findById(id)
+
+             console.log('Console log user ', user)
+         
+             if(user){
+                res.status(200).json(user)
+             }else{
+                res.status(404).json({message: 'An error occured'})
+             }
+             
+    })
+
+    export const getUserFriend   = asyncHandler(async (req, res) => {
+
+        const {id} = req.params
+         //const user = await User.findOne(id).lean() 
+         const user = await User.findById(id)
+         if(!user?.length){
+             return res.status(400).json({message: 'The name does not exist'})
+         }
+
+         if(user){ 
+                const friends = await Promise.all(
+                    user.friends.map((id) => User.findById(id)
+                ));
+                const formattedFriends = map(
+                    ({_id, firstName, lastName, picturePath, occupation}) => {
+                        return {_id, firstName, lastName, picturePath, occupation}
+                    }
+                )
+                res.status(200).json(formattedFriends)
+         }else{
+            res.status(404).json({message: 'An error occured'})
+         }
+         
 })
+
+//Update Friends
+export const addRemoveFriend   = asyncHandler(async (req, res) => {
+
+    const {id, friendId} = req.params
+     //const user = await User.findOne(id).lean() 
+     const user = await User.findById(id)
+     const friend = await User.findById(friendId)
+     if(user.friends.include(friendId)){
+        user.friends = user.friends.filter((id) => id !== friendId);
+        friend.friends = friend.friends.filter((id) =>id !== id)
+     }else{
+        user.friends.push(friendId)
+        user.friends.push(id)
+     }
+     await user.save()
+     await friends.save()
+
+     if(user  && friends ){
+        const friends = await Promise.all(
+            user.friends.map((id) => User.findById(id)
+        ));
+        const formattedFriends = map(
+            ({_id, firstName, lastName, picturePath, occupation}) => {
+                return {_id, firstName, lastName, picturePath, occupation}
+            }
+        )
+        res.status(200).json(formattedFriends)
+     }else{
+        res.status(404).json({message: 'An error occured'})
+     }
+})
+
+
 
 // Sign in Using email and Password - Post method
-export const signin = asyncHandler(async (req, res) => {
+// export const signin = asyncHandler(async (req, res) => {
 
-    const {email, password} = req.body;
+//     const {email, password} = req.body;
     
-    const existingUser = await User.findOne({email}).lean()
-    if(!existingUser){
-        return res.status(400).json({message: "User does not exist"})
-    }
-    const isPasswordCorrect = await bcrypt.compare(password, existingUser.password)
+//     const existingUser = await User.findOne({email}).lean()
+//     if(!existingUser){
+//         return res.status(400).json({message: "User does not exist"})
+//     }
+//     const isPasswordCorrect = await bcrypt.compare(password, existingUser.password)
 
-    if(!isPasswordCorrect){
-        return res.status(400).json({message: "Invalid Credentials"})
-    }
+//     if(!isPasswordCorrect){
+//         return res.status(400).json({message: "Invalid Credentials"})
+//     }
 
-    const token = jwt.sign({email: existingUser.email, id : existingUser._id}, process.env.JSON_SECRET_KEY)
-    res.status(201).json({result :existingUser, token});
-})
+//     const token = jwt.sign({email: existingUser.email, id : existingUser._id}, process.env.JSON_SECRET_KEY)
+//     res.status(201).json({result :existingUser, token});
+// })
 
 // Sign In using Google authentitation
 
